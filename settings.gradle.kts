@@ -8,4 +8,4 @@ pluginManagement {
 
 rootProject.name = "aeperm"
 
-include("api", "common", "paper", "velocity", "bungee", "sql")
+include("api", "common", "paper", "velocity", "bungee", "sql", "bench")

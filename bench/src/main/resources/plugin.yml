@@ -1,0 +1,10 @@
+name: AePerm-Bench
+description: $description
+prefix: APBENCH
+version: '${version}'
+
+main: sh.aelion.aeperm.bench.AepermBenchPlugin
+api-version: '26.2'
+depend: [AePerm]
+
+authors: [ Variiuz ]

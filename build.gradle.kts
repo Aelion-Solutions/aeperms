@@ -70,6 +70,11 @@ subprojects {
         }
     }
 
+    if (name == "bench") {
+        tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
+        tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
+    }
+
     publishing {
         publications {
             create<MavenPublication>("maven") {
@@ -136,6 +141,7 @@ val collectJars = tasks.register<Copy>("collectJars") {
         ":paper:shadowJar",
         ":velocity:shadowJar",
         ":bungee:shadowJar",
+        ":bench:shadowJar",
         ":api:jar",
         ":common:jar",
         ":sql:jar"
@@ -145,6 +151,7 @@ val collectJars = tasks.register<Copy>("collectJars") {
     from(layout.projectDirectory.file("paper/build/libs/aeperm-paper-$distVersion.jar"))
     from(layout.projectDirectory.file("velocity/build/libs/aeperm-velocity-$distVersion.jar"))
     from(layout.projectDirectory.file("bungee/build/libs/aeperm-bungee-$distVersion.jar"))
+    from(layout.projectDirectory.file("bench/build/libs/aeperm-bench-$distVersion.jar"))
     from(layout.projectDirectory.file("api/build/libs/aeperm-api-$distVersion.jar"))
     from(layout.projectDirectory.file("common/build/libs/aeperm-common-$distVersion.jar"))
     from(layout.projectDirectory.file("sql/build/libs/aelion-sql-$distVersion.jar"))

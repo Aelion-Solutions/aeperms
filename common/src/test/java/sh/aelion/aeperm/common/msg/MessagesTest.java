@@ -34,7 +34,7 @@ class MessagesTest {
         String sep = PlainTextComponentSerializer.plainText().serialize(Messages.separator());
         assertThat(header).contains("»").contains("Plugin Info").doesNotContain("AePerm");
         assertThat(line).contains("Version").contains("1.0").doesNotContain("AePerm");
-        assertThat(sep).contains("»").contains("-");
+        assertThat(sep).contains("»").contains("─");
     }
 
     @Test

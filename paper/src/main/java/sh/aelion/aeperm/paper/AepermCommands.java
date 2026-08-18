@@ -1,17 +1,25 @@
 package sh.aelion.aeperm.paper;
 
+import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import sh.aelion.aeperm.common.command.AepermSource;
 import sh.aelion.aeperm.common.command.CommandService;
+import sh.aelion.aeperm.common.command.PermissionNodeArgument;
 import sh.aelion.aeperm.common.command.SourceMapper;
 import net.kyori.adventure.audience.Audience;
 import org.bukkit.command.CommandSender;
 
 import java.util.List;
+import java.util.function.Function;
 
 public final class AepermCommands {
+
+    private static final Function<ArgumentType<?>, ArgumentType<?>> PAPER_TYPES = type ->
+            type instanceof PermissionNodeArgument
+                    ? PaperPermissionNodeArgument.INSTANCE
+                    : type;
 
     private AepermCommands() {
     }
@@ -27,7 +35,9 @@ public final class AepermCommands {
                                 sender::hasPermission,
                                 sender.getName()
                         );
-                    }
+                    },
+                    ignored -> true,
+                    PAPER_TYPES
             );
             event.registrar().register(root, "AePerm", List.of("ap"));
         });

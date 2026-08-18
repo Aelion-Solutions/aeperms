@@ -25,6 +25,11 @@ public final class Arguments {
         return RequiredArgumentBuilder.argument(name, StringArgumentType.word());
     }
 
+    /** Permission node token. Allows {@code *} unlike {@link #word(String)}. */
+    public static RequiredArgumentBuilder<AepermSource, String> node(String name) {
+        return RequiredArgumentBuilder.argument(name, PermissionNodeArgument.permissionNode());
+    }
+
     public static RequiredArgumentBuilder<AepermSource, Integer> integer(String name) {
         return RequiredArgumentBuilder.argument(name, IntegerArgumentType.integer());
     }

@@ -51,7 +51,11 @@ class CommandServiceMoreTest {
         UUID uuid = UUID.randomUUID();
         commands.handle(audience, new String[]{"user", uuid.toString(), "permission", "set", "-deny.node"});
         commands.handle(audience, new String[]{"user", uuid.toString(), "permission", "unset", "deny.node"});
+        commands.handle(audience, new String[]{"user", uuid.toString(), "permission", "set", "*"});
+        assertThat(bootstrap.permissions().has(uuid, "anything.goes")).isTrue();
         commands.handle(audience, new String[]{"group", "create", "mods"});
+        commands.handle(audience, new String[]{"group", "mods", "permission", "set", "mod.*"});
+        assertThat(bootstrap.permissions().group("mods").orElseThrow().permissions()).containsKey("mod.*");
         commands.handle(audience, new String[]{"group", "mods", "parent", "add", "default"});
         commands.handle(audience, new String[]{"group", "mods", "parent", "remove", "default"});
         commands.handle(audience, new String[]{"group", "mods", "weight", "20"});

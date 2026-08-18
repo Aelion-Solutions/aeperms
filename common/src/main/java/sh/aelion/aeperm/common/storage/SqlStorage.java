@@ -233,6 +233,15 @@ public final class SqlStorage implements Storage {
     }
 
     @Override
+    public int countHistory(String targetFilter) {
+        var select = db.query().select("COUNT(*)").from("ae_history");
+        if (targetFilter != null && !targetFilter.isBlank()) {
+            select.where(Where.ilike("target", "%" + targetFilter + "%"));
+        }
+        return select.one(rs -> rs.getInt(1)).orElse(0);
+    }
+
+    @Override
     public void close() {
         if (db != null) {
             db.close();

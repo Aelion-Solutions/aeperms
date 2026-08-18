@@ -128,6 +128,7 @@ public final class AepermBootstrap implements AutoCloseable {
         service.warmGroups();
 
         logger.info("AePerm ready server-id=" + config.serverId()
+                + " storage=" + (memoryOnly ? "memory" : "sql")
                 + " groups=" + service.groupNames().size()
                 + " cacheUsers=" + cache.userCount());
 

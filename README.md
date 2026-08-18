@@ -7,6 +7,7 @@ Lean, low-overhead permission engine for Minecraft servers and networks.
 - `aeperm-api` - API for other plugins
 - `aeperm-common` - core aeperms
 - `aeperm-paper` / `aeperm-velocity` / `aeperm-bungee` - platform jars
+- `aeperm-bench` - Paper stress-test plugin (test servers only, not published)
 - `aelion-sql` - shared Postgres/MariaDB library (Hikari + Caffeine shaded under `sh.aelion.libs.*`)
 
 ## Development
@@ -34,6 +35,26 @@ Java 25, Gradle wrapper:
 ```
 
 Jars land in `out/` in root.
+
+## Benchmark plugin
+
+`aeperm-bench` is for test servers only. It mutates AePerm storage. Drop `out/aeperm-bench-*.jar` next to `aeperm-paper` and run as op (or `aeperm.admin`).
+
+`Player.hasPermission` is Bukkit Superperms after AePerm attaches. `AepermAPI.has` is the engine cache-hit path.
+
+| Command | Notes |
+|---------|--------|
+| `/apbench seed [nodes]` | Isolated `aeperm-bench-*` groups + user nodes (default 500) |
+| `/apbench run [iters]` | Bukkit, API, lookup, and recalc microbenches |
+| `/apbench bukkit [iters]` | Main-thread `hasPermission` (exact, wildcard, miss) |
+| `/apbench api [iters]` | `AepermAPI.has` cache hit |
+| `/apbench lookup [iters]` | `CalculatedUser.has` |
+| `/apbench recalc [iters]` | Invalidate + `user()` calculate |
+| `/apbench tick [perTick] [seconds]` | Per-tick `hasPermission` spam (TPS/MSPT) |
+| `/apbench stop` | Cancel tick stress |
+| `/apbench cleanup` | Restore primary group and delete bench data |
+
+Alias: `/aepermbench`. Default iters 100000 (cap 1000000). Recalc defaults to 200. Main-thread benches hitch the server on purpose.
 
 ## Commands and permissions
 

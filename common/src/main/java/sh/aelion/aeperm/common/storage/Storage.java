@@ -35,6 +35,8 @@ public interface Storage extends AutoCloseable {
 
     List<HistoryRecord> listHistory(String targetFilter, int offset, int limit);
 
+    int countHistory(String targetFilter);
+
     @Override
     void close();
 }

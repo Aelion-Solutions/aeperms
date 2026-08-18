@@ -36,10 +36,4 @@ tasks {
     build {
         dependsOn(shadowJar)
     }
-    processResources {
-        val props = mapOf("version" to version.toString())
-        filesMatching("velocity-plugin.json") {
-            expand(props)
-        }
-    }
 }

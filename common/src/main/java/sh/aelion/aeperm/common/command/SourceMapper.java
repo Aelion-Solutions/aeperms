@@ -31,7 +31,7 @@ public final class SourceMapper {
             LiteralCommandNode<AepermSource> node,
             Function<S, AepermSource> adaptor
     ) {
-        return map(node, adaptor, ignored -> true);
+        return map(node, adaptor, ignored -> true, Function.identity());
     }
 
     public static <S> LiteralCommandNode<S> map(
@@ -39,26 +39,41 @@ public final class SourceMapper {
             Function<S, AepermSource> adaptor,
             Predicate<S> visible
     ) {
+        return map(node, adaptor, visible, Function.identity());
+    }
+
+    /**
+     * @param typeMapper optional remapper for argument types (e.g. Paper {@code CustomArgumentType} wrap)
+     */
+    public static <S> LiteralCommandNode<S> map(
+            LiteralCommandNode<AepermSource> node,
+            Function<S, AepermSource> adaptor,
+            Predicate<S> visible,
+            Function<ArgumentType<?>, ArgumentType<?>> typeMapper
+    ) {
         LiteralArgumentBuilder<S> builder = LiteralArgumentBuilder.literal(node.getLiteral());
-        apply(node, builder, adaptor, visible);
+        apply(node, builder, adaptor, visible, typeMapper);
         return builder.build();
     }
 
+    @SuppressWarnings("unchecked")
     private static <S, T> CommandNode<S> mapArgument(
             ArgumentCommandNode<AepermSource, T> node,
             Function<S, AepermSource> adaptor,
-            Predicate<S> visible
+            Predicate<S> visible,
+            Function<ArgumentType<?>, ArgumentType<?>> typeMapper
     ) {
+        ArgumentType<T> type = (ArgumentType<T>) typeMapper.apply(node.getType());
         RequiredArgumentBuilder<S, T> builder = RequiredArgumentBuilder.argument(
                 node.getName(),
-                node.getType()
+                type
         );
         SuggestionProvider<AepermSource> suggestions = node.getCustomSuggestions();
         if (suggestions != null) {
             builder.suggests((ctx, suggestionBuilder) ->
                     suggestions.getSuggestions(mapContext(ctx, adaptor), suggestionBuilder));
         }
-        apply(node, builder, adaptor, visible);
+        apply(node, builder, adaptor, visible, typeMapper);
         return builder.build();
     }
 
@@ -66,7 +81,8 @@ public final class SourceMapper {
             CommandNode<AepermSource> node,
             ArgumentBuilder<S, ?> builder,
             Function<S, AepermSource> adaptor,
-            Predicate<S> visible
+            Predicate<S> visible,
+            Function<ArgumentType<?>, ArgumentType<?>> typeMapper
     ) {
         builder.requires(source -> visible.test(source) && node.getRequirement().test(adaptor.apply(source)));
         if (node.getCommand() != null) {
@@ -89,7 +105,7 @@ public final class SourceMapper {
             });
         }
         for (CommandNode<AepermSource> child : node.getChildren()) {
-            builder.then(mapChild(child, adaptor, visible));
+            builder.then(mapChild(child, adaptor, visible, typeMapper));
         }
     }
 
@@ -97,13 +113,14 @@ public final class SourceMapper {
     private static <S> CommandNode<S> mapChild(
             CommandNode<AepermSource> child,
             Function<S, AepermSource> adaptor,
-            Predicate<S> visible
+            Predicate<S> visible,
+            Function<ArgumentType<?>, ArgumentType<?>> typeMapper
     ) {
         if (child instanceof LiteralCommandNode<AepermSource> literal) {
-            return map(literal, adaptor, visible);
+            return map(literal, adaptor, visible, typeMapper);
         }
         if (child instanceof ArgumentCommandNode<?, ?> argument) {
-            return mapArgument((ArgumentCommandNode<AepermSource, ?>) argument, adaptor, visible);
+            return mapArgument((ArgumentCommandNode<AepermSource, ?>) argument, adaptor, visible, typeMapper);
         }
         throw new IllegalArgumentException("Unsupported command node " + child.getClass().getName());
     }

@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import sh.aelion.aeperm.api.CalculatedUser;
 import sh.aelion.aeperm.api.ContextSet;
 import sh.aelion.aeperm.common.command.AepermSource;
@@ -40,15 +41,15 @@ public final class UserCommands extends SubCommand {
                                 .executes(this::showPermissions)
                                 .then(Arguments.integer("page").executes(this::showPermissions)))
                         .then(literal("check")
-                                .then(Arguments.word("node").executes(this::check)))
+                                .then(Arguments.node("node").executes(this::check)))
                         .then(literal("permission")
                                 .executes(c -> info(c.getSource(), "Usage: /ap user <p> permission <set|unset> <node> [seconds]"))
                                 .then(literal("set")
-                                        .then(Arguments.word("node")
+                                        .then(Arguments.node("node")
                                                 .executes(this::setPermission)
                                                 .then(Arguments.seconds("seconds").executes(this::setPermission))))
                                 .then(literal("unset")
-                                        .then(Arguments.word("node").executes(this::unsetPermission))))
+                                        .then(Arguments.node("node").executes(this::unsetPermission))))
                         .then(literal("group")
                                 .executes(c -> info(c.getSource(), "Usage: /ap user <p> group <add|remove|primary> <group> [seconds]"))
                                 .then(literal("add")
@@ -63,9 +64,8 @@ public final class UserCommands extends SubCommand {
     }
 
     private int showInfo(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             CalculatedUser user = ctx.permissions().user(uuid).orElseThrow();
-            String target = user.name().orElse(uuid.toString());
             List<Component> lines = new ArrayList<>();
             lines.add(Messages.field("Name", user.name().orElse("-")));
             lines.add(Messages.field("UUID", uuid.toString()));
@@ -89,77 +89,91 @@ public final class UserCommands extends SubCommand {
             lines.add(Messages.blank());
             lines.add(Messages.item(Messages.permissionsLink(
                     user.permissions().size(),
-                    "/ap user " + target + " permissions")));
+                    "/ap user " + who + " permissions")));
             Messages.frame(audience, lines);
             return 1;
         });
     }
 
     private int showPermissions(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             CalculatedUser user = ctx.permissions().user(uuid).orElseThrow();
-            String target = user.name().orElse(uuid.toString());
             Messages.permissionPage(
                     audience,
                     "Permissions",
                     user.permissions(),
                     optionalPage(c),
-                    "/ap user " + target + " permissions");
+                    "/ap user " + who + " permissions");
             return 1;
         });
     }
 
     private int check(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             String node = StringArgumentType.getString(c, "node");
             boolean result = ctx.permissions().has(uuid, node);
-            Messages.info(audience, "Check <yellow>" + node + "</yellow> = <yellow>" + result + "</yellow>");
+            Messages.info(audience, "Check <yellow>" + Messages.escape(node) + "</yellow> = <yellow>" + result + "</yellow>");
             return 1;
         });
     }
 
     private int setPermission(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             String node = StringArgumentType.getString(c, "node");
             Duration ttl = optionalSeconds(c);
             ctx.permissions().userAdd(uuid, node, ContextSet.empty(), ttl);
-            Messages.success(audience, "Set <yellow>" + node + "</yellow> for user");
+            Messages.success(audience, Component.text("Set ", NamedTextColor.GREEN)
+                    .append(Component.text(node, NamedTextColor.YELLOW))
+                    .append(Component.text(" for ", NamedTextColor.GREEN))
+                    .append(Component.text(who, NamedTextColor.YELLOW)));
             return 1;
         });
     }
 
     private int unsetPermission(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             String node = StringArgumentType.getString(c, "node");
             ctx.permissions().userRemove(uuid, node, ContextSet.empty());
-            Messages.success(audience, "Unset <yellow>" + node + "</yellow> for user");
+            Messages.success(audience, Component.text("Unset ", NamedTextColor.GREEN)
+                    .append(Component.text(node, NamedTextColor.YELLOW))
+                    .append(Component.text(" for ", NamedTextColor.GREEN))
+                    .append(Component.text(who, NamedTextColor.YELLOW)));
             return 1;
         });
     }
 
     private int addGroup(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             String group = StringArgumentType.getString(c, "group");
             ctx.permissions().addToGroup(uuid, group, optionalSeconds(c));
-            Messages.success(audience, "Added user to <yellow>" + group + "</yellow>");
+            Messages.success(audience, Component.text("Added ", NamedTextColor.GREEN)
+                    .append(Component.text(who, NamedTextColor.YELLOW))
+                    .append(Component.text(" to ", NamedTextColor.GREEN))
+                    .append(Component.text(group, NamedTextColor.YELLOW)));
             return 1;
         });
     }
 
     private int removeGroup(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             String group = StringArgumentType.getString(c, "group");
             ctx.permissions().removeFromGroup(uuid, group);
-            Messages.success(audience, "Removed user from <yellow>" + group + "</yellow>");
+            Messages.success(audience, Component.text("Removed ", NamedTextColor.GREEN)
+                    .append(Component.text(who, NamedTextColor.YELLOW))
+                    .append(Component.text(" from ", NamedTextColor.GREEN))
+                    .append(Component.text(group, NamedTextColor.YELLOW)));
             return 1;
         });
     }
 
     private int setPrimary(CommandContext<AepermSource> c) {
-        return withUser(c, (audience, uuid) -> {
+        return withUser(c, (audience, uuid, who) -> {
             String group = StringArgumentType.getString(c, "group");
             ctx.permissions().setPrimaryGroup(uuid, group);
-            Messages.success(audience, "Primary group set to <yellow>" + group + "</yellow>");
+            Messages.success(audience, Component.text("Primary group for ", NamedTextColor.GREEN)
+                    .append(Component.text(who, NamedTextColor.YELLOW))
+                    .append(Component.text(" set to ", NamedTextColor.GREEN))
+                    .append(Component.text(group, NamedTextColor.YELLOW)));
             return 1;
         });
     }
@@ -168,9 +182,12 @@ public final class UserCommands extends SubCommand {
         String raw = StringArgumentType.getString(c, "target");
         Optional<UUID> uuid = ctx.resolveTarget(raw);
         if (uuid.isEmpty()) {
-            return error(c.getSource(), "Unknown player <yellow>" + raw + "</yellow>");
+            return error(c.getSource(), "Unknown player <yellow>" + Messages.escape(raw) + "</yellow>");
         }
-        return action.run(c.getSource().audience(), uuid.get());
+        String who = ctx.permissions().user(uuid.get())
+                .flatMap(CalculatedUser::name)
+                .orElse(raw);
+        return action.run(c.getSource().audience(), uuid.get(), who);
     }
 
     private static Duration optionalSeconds(CommandContext<AepermSource> c) {
@@ -191,6 +208,6 @@ public final class UserCommands extends SubCommand {
 
     @FunctionalInterface
     private interface UserAction {
-        int run(Audience audience, UUID uuid);
+        int run(Audience audience, UUID uuid, String who);
     }
 }

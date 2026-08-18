@@ -7,6 +7,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -203,6 +204,7 @@ public final class AelionDb implements AutoCloseable {
         public AelionDb open() {
             Objects.requireNonNull(url, "url");
             Dialect dialect = Dialect.fromUrl(url);
+            quietPoolLogging();
             HikariConfig hikari = new HikariConfig();
             hikari.setJdbcUrl(url);
             hikari.setUsername(user);
@@ -215,6 +217,35 @@ public final class AelionDb implements AutoCloseable {
             hikari.setPoolName(poolName);
             hikari.setAutoCommit(autoCommit);
             return new AelionDb(dialect, new HikariDataSource(hikari), cacheTtl);
+        }
+    }
+
+    /** Drop Hikari startup INFO chatter (unshaded and relocated packages). */
+    private static void quietPoolLogging() {
+        // Prefer Log4j Configurator. Do not call JUL setLevel: Velocity's Log4j JUL bridge
+        // warns that setLevel is ignored and cannot change the underlying logger.
+        Class<?> levelClass;
+        Object warn;
+        Class<?> configurator;
+        try {
+            levelClass = Class.forName("org.apache.logging.log4j.Level");
+            warn = levelClass.getField("WARN").get(null);
+            configurator = Class.forName("org.apache.logging.log4j.core.config.Configurator");
+        } catch (ReflectiveOperationException ignored) {
+            return;
+        }
+        for (String name : List.of(
+                "com.zaxxer.hikari",
+                "com.zaxxer.hikari.HikariDataSource",
+                "com.zaxxer.hikari.pool.HikariPool",
+                "sh.aelion.libs.hikari",
+                "sh.aelion.libs.hikari.HikariDataSource",
+                "sh.aelion.libs.hikari.pool.HikariPool"
+        )) {
+            try {
+                configurator.getMethod("setLevel", String.class, levelClass).invoke(null, name, warn);
+            } catch (ReflectiveOperationException ignored) {
+            }
         }
     }
 

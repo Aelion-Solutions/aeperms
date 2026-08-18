@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-@Plugin(id = "aeperm", name = "AePerm", version = "1.0-SNAPSHOT", authors = {"Variiuz"})
+@Plugin(id = "aeperm", name = "AePerm", version = "1.1", authors = {"Variiuz"})
 public final class AepermVelocityPlugin {
 
     private final ProxyServer server;
@@ -133,7 +133,7 @@ public final class AepermVelocityPlugin {
                     .build();
             server.getCommandManager().register(meta, command);
 
-            logger.info("AePerm Velocity enabled (commands + permission provider)");
+            logger.info("AePerm enabled!");
         } catch (Exception e) {
             logger.error("Failed to enable AePerm", e);
         }

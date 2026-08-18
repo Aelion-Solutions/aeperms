@@ -50,9 +50,14 @@ public final class SelectQuery {
 
     public String sql() {
         Dialect dialect = db.dialect();
-        String cols = columns.isEmpty() || (columns.size() == 1 && "*".equals(columns.getFirst()))
-                ? "*"
-                : columns.stream().map(dialect::quote).collect(Collectors.joining(", "));
+        String cols;
+        if (columns.size() == 1 && "COUNT(*)".equalsIgnoreCase(columns.getFirst())) {
+            cols = "COUNT(*)";
+        } else if (columns.isEmpty() || (columns.size() == 1 && "*".equals(columns.getFirst()))) {
+            cols = "*";
+        } else {
+            cols = columns.stream().map(dialect::quote).collect(Collectors.joining(", "));
+        }
         StringBuilder sql = new StringBuilder("SELECT ").append(cols)
                 .append(" FROM ").append(dialect.quote(table));
         List<Object> ignored = new ArrayList<>();

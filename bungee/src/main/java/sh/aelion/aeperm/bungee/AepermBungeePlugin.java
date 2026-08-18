@@ -59,7 +59,7 @@ public final class AepermBungeePlugin extends Plugin implements Listener {
 
             getProxy().getPluginManager().registerCommand(this, new AepermCommand());
             getProxy().getPluginManager().registerListener(this, this);
-            getLogger().info("AePerm Bungee enabled");
+            getLogger().info("AePerm enabled!");
         } catch (Exception e) {
             getLogger().severe("Failed to enable AePerm: " + e.getMessage());
             e.printStackTrace();

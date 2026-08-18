@@ -110,6 +110,21 @@ public final class MemoryStorage implements Storage {
     }
 
     @Override
+    public int countHistory(String targetFilter) {
+        String needle = targetFilter == null ? "" : targetFilter.toLowerCase(Locale.ROOT);
+        if (needle.isBlank()) {
+            return history.size();
+        }
+        int count = 0;
+        for (HistoryRecord record : history) {
+            if (record.target().toLowerCase(Locale.ROOT).contains(needle)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
     public void close() {
         users.clear();
         groups.clear();

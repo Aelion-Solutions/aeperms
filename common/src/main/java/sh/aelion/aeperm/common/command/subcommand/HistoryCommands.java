@@ -4,6 +4,8 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import sh.aelion.aeperm.common.command.AepermSource;
 import sh.aelion.aeperm.common.command.Arguments;
 import sh.aelion.aeperm.common.command.SubCommand;
@@ -29,34 +31,60 @@ public final class HistoryCommands extends SubCommand {
     @Override
     public LiteralCommandNode<AepermSource> build() {
         return literal(name())
-                .executes(c -> show(c, "", 1))
-                .then(Arguments.integer("page").executes(c -> show(c, "", IntegerArgumentType.getInteger(c, "page"))))
+                .executes(c -> show(c, "", "/ap history", 1))
+                .then(Arguments.integer("page").executes(c ->
+                        show(c, "", "/ap history", IntegerArgumentType.getInteger(c, "page"))))
                 .then(literal("user")
                         .then(Arguments.word("target")
-                                .executes(c -> show(c, StringArgumentType.getString(c, "target"), 1))
-                                .then(Arguments.integer("page").executes(c ->
-                                        show(c, StringArgumentType.getString(c, "target"), IntegerArgumentType.getInteger(c, "page"))))))
+                                .executes(c -> {
+                                    String target = StringArgumentType.getString(c, "target");
+                                    return show(c, target, "/ap history user " + target, 1);
+                                })
+                                .then(Arguments.integer("page").executes(c -> {
+                                    String target = StringArgumentType.getString(c, "target");
+                                    return show(c, target, "/ap history user " + target,
+                                            IntegerArgumentType.getInteger(c, "page"));
+                                }))))
                 .then(literal("group")
                         .then(Arguments.word("target")
-                                .executes(c -> show(c, StringArgumentType.getString(c, "target"), 1))
-                                .then(Arguments.integer("page").executes(c ->
-                                        show(c, StringArgumentType.getString(c, "target"), IntegerArgumentType.getInteger(c, "page"))))))
+                                .executes(c -> {
+                                    String target = StringArgumentType.getString(c, "target");
+                                    return show(c, target, "/ap history group " + target, 1);
+                                })
+                                .then(Arguments.integer("page").executes(c -> {
+                                    String target = StringArgumentType.getString(c, "target");
+                                    return show(c, target, "/ap history group " + target,
+                                            IntegerArgumentType.getInteger(c, "page"));
+                                }))))
                 .build();
     }
 
-    private int show(CommandContext<AepermSource> c, String filter, int page) {
-        List<HistoryRecord> rows = ctx.permissions().history(filter, page);
-        if (rows.isEmpty()) {
+    private int show(CommandContext<AepermSource> c, String filter, String commandBase, int page) {
+        int total = ctx.permissions().storage().countHistory(filter);
+        if (total == 0) {
             return info(c.getSource(), "No history entries");
         }
-        List<Messages.Line> lines = new ArrayList<>();
+        int totalPages = Math.max(1, (total + Messages.PAGE_SIZE - 1) / Messages.PAGE_SIZE);
+        int current = Math.clamp(page, 1, totalPages);
+        int offset = (current - 1) * Messages.PAGE_SIZE;
+        List<HistoryRecord> rows = ctx.permissions().storage().listHistory(filter, offset, Messages.PAGE_SIZE);
+
+        List<Component> items = new ArrayList<>(rows.size());
         for (HistoryRecord row : rows) {
-            lines.add(new Messages.Line(
-                    TIME.format(row.at()),
-                    row.actor() + " " + row.action() + " " + row.target() + (row.detail().isBlank() ? "" : " " + row.detail())
-            ));
+            String detail = row.detail() == null || row.detail().isBlank() ? "" : " " + row.detail();
+            items.add(Component.text(TIME.format(row.at()) + " ", NamedTextColor.DARK_GRAY)
+                    .append(Component.text(row.actor(), NamedTextColor.YELLOW))
+                    .append(Component.text(" " + row.action() + " ", NamedTextColor.GRAY))
+                    .append(Component.text(row.target() + detail, NamedTextColor.GREEN)));
         }
-        Messages.card(c.getSource().audience(), "History p" + Math.max(page, 1), lines);
+
+        Messages.pagedSlice(
+                c.getSource().audience(),
+                "History",
+                items,
+                current,
+                totalPages,
+                commandBase);
         return 1;
     }
 }
