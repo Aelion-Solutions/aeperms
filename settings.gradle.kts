@@ -6,10 +6,6 @@ pluginManagement {
     }
 }
 
-plugins {
-    id("io.ebean") version "15.8.0" apply false
-}
-
 rootProject.name = "aeperm"
 
-include("api", "common", "paper", "velocity", "bungee")
+include("api", "common", "paper", "velocity", "bungee", "sql")
