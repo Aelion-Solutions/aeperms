@@ -1,17 +1,15 @@
 plugins {
     `java-library`
-    id("io.ebean") version "15.8.0"
 }
 
 dependencies {
     api(project(":api"))
+    api(project(":sql")) {
+        isTransitive = false
+    }
 
-    implementation("io.ebean:ebean:15.8.0")
-    implementation("io.ebean:ebean-core:15.8.0")
-    annotationProcessor("io.ebean:querybean-generator:15.8.0")
-    implementation("jakarta.persistence:jakarta.persistence-api:3.2.0")
-    implementation("com.zaxxer:HikariCP:6.3.0")
     implementation("org.postgresql:postgresql:42.7.7")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.6")
     implementation("redis.clients:jedis:5.2.0")
     implementation("com.google.code.gson:gson:2.13.1")
     implementation("org.yaml:snakeyaml:2.4")
@@ -23,11 +21,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.13.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("org.assertj:assertj-core:3.27.3")
-}
-
-ebean {
-    debugLevel = 0
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 tasks.jacocoTestReport {
@@ -36,8 +30,7 @@ tasks.jacocoTestReport {
         files(classDirectories.files.map {
             fileTree(it) {
                 exclude(
-                    "**/storage/EbeanStorage*",
-                    "**/storage/ebean/**",
+                    "**/storage/SqlStorage*",
                     "**/sync/RedisSyncBus*",
                     "**/query/**"
                 )

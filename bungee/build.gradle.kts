@@ -20,10 +20,13 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
         archiveFileName.set("aeperm-bungee-${project.version}.jar")
-        relocate("com.zaxxer.hikari", "net.beteax.aeperm.libs.hikari")
-        relocate("redis.clients", "net.beteax.aeperm.libs.jedis")
-        relocate("com.google.gson", "net.beteax.aeperm.libs.gson")
-        relocate("org.yaml.snakeyaml", "net.beteax.aeperm.libs.snakeyaml")
+        dependencies {
+            exclude(dependency("com.zaxxer:HikariCP"))
+            exclude(dependency("com.github.ben-manes.caffeine:caffeine"))
+        }
+        relocate("redis.clients", "sh.aelion.aeperm.libs.jedis")
+        relocate("com.google.gson", "sh.aelion.aeperm.libs.gson")
+        relocate("org.yaml.snakeyaml", "sh.aelion.aeperm.libs.snakeyaml")
         mergeServiceFiles()
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
@@ -33,7 +36,7 @@ tasks {
     processResources {
         val props = mapOf(
             "version" to version.toString(),
-            "description" to (project.description ?: "Aelion Permission Plugin")
+            "description" to (project.description ?: "AePerms - A permission plugin for Minecraft servers"),
         )
         filesMatching("bungee.yml") {
             expand(props)

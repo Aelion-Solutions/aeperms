@@ -1,5 +1,5 @@
-name: aeperm
-main: net.beteax.aeperm.bungee.AepermBungeePlugin
+name: AePerm
+main: sh.aelion.aeperm.bungee.AepermBungeePlugin
 version: ${version}
 author: Variiuz
 description: ${description}

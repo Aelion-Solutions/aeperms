@@ -23,11 +23,13 @@ tasks {
         archiveFileName.set("aeperm-velocity-${project.version}.jar")
         dependencies {
             exclude(dependency("com.mojang:brigadier"))
+            exclude(dependency("com.zaxxer:HikariCP"))
+            exclude(dependency("com.github.ben-manes.caffeine:caffeine"))
         }
-        relocate("com.zaxxer.hikari", "net.beteax.aeperm.libs.hikari")
-        relocate("redis.clients", "net.beteax.aeperm.libs.jedis")
-        relocate("com.google.gson", "net.beteax.aeperm.libs.gson")
-        relocate("org.yaml.snakeyaml", "net.beteax.aeperm.libs.snakeyaml")
+        relocate("redis.clients", "sh.aelion.aeperm.libs.jedis")
+        relocate("com.google.gson", "sh.aelion.aeperm.libs.gson")
+        relocate("org.yaml.snakeyaml", "sh.aelion.aeperm.libs.snakeyaml")
+        // Hikari + Caffeine already relocated inside aelion-sql to sh.aelion.libs.*
         mergeServiceFiles()
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
