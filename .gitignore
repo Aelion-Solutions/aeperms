@@ -1,0 +1,29 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Gradle / Java
+.gradle/
+**/build/
+out/
+run/
+**/run/
+hs_err_pid*
+replay_pid*
+.paperweight/
+
+# IDE
+.idea/
+*.iml
+.idea_modules/
+.vscode/
+.cursor/
+
+# Secrets
+.env
+.env.*
+*.local.properties
+gradle-local.properties
+
+# Local test stack
+docker/

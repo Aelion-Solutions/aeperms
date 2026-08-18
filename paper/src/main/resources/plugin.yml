@@ -1,0 +1,17 @@
+name: aeperm
+description: $description
+prefix: AEPERM
+version: '${version}'
+
+main: net.beteax.aeperm.paper.AepermPlugin
+paper-plugin-loader: net.beteax.aeperm.paper.AepermLoader
+api-version: '26.2'
+load: STARTUP
+
+authors: [ Variiuz ]
+website: beteax.net
+
+permissions:
+  aeperm.admin:
+    description: AePerm admin commands
+    default: op

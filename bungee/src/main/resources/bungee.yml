@@ -1,0 +1,5 @@
+name: aeperm
+main: net.beteax.aeperm.bungee.AepermBungeePlugin
+version: ${version}
+author: Variiuz
+description: ${description}
