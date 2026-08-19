@@ -240,7 +240,10 @@ public final class AelionDb implements AutoCloseable {
                 "com.zaxxer.hikari.pool.HikariPool",
                 "sh.aelion.libs.hikari",
                 "sh.aelion.libs.hikari.HikariDataSource",
-                "sh.aelion.libs.hikari.pool.HikariPool"
+                "sh.aelion.libs.hikari.pool.HikariPool",
+                "sh.aelion.aeperm.libs.hikari",
+                "sh.aelion.aeperm.libs.hikari.HikariDataSource",
+                "sh.aelion.aeperm.libs.hikari.pool.HikariPool"
         )) {
             try {
                 configurator.getMethod("setLevel", String.class, levelClass).invoke(null, name, warn);

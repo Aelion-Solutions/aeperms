@@ -27,6 +27,9 @@ tasks {
         relocate("redis.clients", "sh.aelion.aeperm.libs.jedis")
         relocate("com.google.gson", "sh.aelion.aeperm.libs.gson")
         relocate("org.yaml.snakeyaml", "sh.aelion.aeperm.libs.snakeyaml")
+        relocate("sh.aelion.sql", "sh.aelion.aeperm.libs.sql")
+        relocate("sh.aelion.libs.hikari", "sh.aelion.aeperm.libs.hikari")
+        relocate("sh.aelion.libs.caffeine", "sh.aelion.aeperm.libs.caffeine")
         mergeServiceFiles()
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }
