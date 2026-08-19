@@ -143,9 +143,12 @@ public final class AepermBootstrap implements AutoCloseable {
      * @return AepermBootstrap instance
      */
     public static AepermBootstrap createForTests(AepermConfig config, SyncBus syncBus, ContextProvider contexts) {
+        return createForTests(config, syncBus, contexts, Clock.systemUTC());
+    }
+
+    public static AepermBootstrap createForTests(AepermConfig config, SyncBus syncBus, ContextProvider contexts, Clock clock) {
         Storage storage = new MemoryStorage();
         storage.init();
-        Clock clock = Clock.systemUTC();
         LocalCache cache = new LocalCache(clock, Duration.ofSeconds(config.cache().userTtlSeconds()));
         PermissionCalculator calculator = new PermissionCalculator(clock);
         Executor async = Runnable::run;

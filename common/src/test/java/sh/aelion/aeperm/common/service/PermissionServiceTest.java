@@ -8,7 +8,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -130,5 +132,85 @@ class PermissionServiceTest {
     void encodeDecodeSyncMessages() {
         var msg = busA.decode(busA.encode(sh.aelion.aeperm.common.sync.SyncMessage.user("a", UUID.randomUUID())));
         assertThat(msg.type()).isEqualTo(sh.aelion.aeperm.common.sync.SyncMessage.Type.USER_INVALIDATE);
+    }
+
+    @Test
+    void parentGroupChangeInvalidatesChildMembers() {
+        UUID uuid = UUID.randomUUID();
+        a.permissions().createGroup("staff");
+        a.permissions().addParent("staff", "default");
+        a.permissions().addToGroup(uuid, "staff", null);
+        a.permissions().groupAdd("default", "basic.use", ContextSet.empty(), null);
+        assertThat(a.permissions().has(uuid, "basic.use")).isTrue();
+
+        a.permissions().groupRemove("default", "basic.use", ContextSet.empty());
+        assertThat(a.permissions().has(uuid, "basic.use")).isFalse();
+    }
+
+    @Test
+    void parentGroupChangeInvalidatesPeerChildMembers() {
+        UUID uuid = UUID.randomUUID();
+        for (AepermBootstrap boot : java.util.List.of(a, b)) {
+            boot.permissions().createGroup("staff");
+            boot.permissions().addParent("staff", "default");
+            boot.permissions().addToGroup(uuid, "staff", null);
+            boot.permissions().groupAdd("default", "basic.use", ContextSet.empty(), null);
+        }
+        assertThat(b.permissions().has(uuid, "basic.use")).isTrue();
+        assertThat(b.permissions().cache().userAny(uuid)).isPresent();
+
+        a.permissions().groupRemove("default", "basic.use", ContextSet.empty());
+        assertThat(b.permissions().cache().userAny(uuid)).isEmpty();
+    }
+
+    @Test
+    void tempMembershipExpiryDropsCacheBeforeUserTtl() {
+        Instant start = Instant.parse("2026-01-01T00:00:00Z");
+        MutableClock clock = new MutableClock(start);
+        AepermBootstrap boot = AepermBootstrap.createForTests(
+                new AepermConfig(),
+                new sh.aelion.aeperm.common.sync.NoopSyncBus(),
+                new StaticContextProvider("s"),
+                clock
+        );
+        try {
+            UUID uuid = UUID.randomUUID();
+            boot.permissions().createGroup("vip");
+            boot.permissions().groupAdd("vip", "vip.perk", ContextSet.empty(), null);
+            boot.permissions().addToGroup(uuid, "vip", Duration.ofSeconds(30));
+            assertThat(boot.permissions().has(uuid, "vip.perk")).isTrue();
+
+            clock.set(start.plusSeconds(31));
+            assertThat(boot.permissions().has(uuid, "vip.perk")).isFalse();
+        } finally {
+            boot.close();
+        }
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant instant;
+
+        private MutableClock(Instant instant) {
+            this.instant = instant;
+        }
+
+        void set(Instant instant) {
+            this.instant = instant;
+        }
+
+        @Override
+        public java.time.ZoneOffset getZone() {
+            return java.time.ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return instant;
+        }
     }
 }

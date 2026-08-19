@@ -46,19 +46,7 @@ public final class RedisSyncBus implements SyncBus {
         pubSub = new JedisPubSub() {
             @Override
             public void onMessage(String ch, String message) {
-                SyncMessage syncMessage = gson.fromJson(message, SyncMessage.class);
-                if (syncMessage == null || originServerId.equals(syncMessage.originServerId())) {
-                    return;
-                }
-                if (syncMessage.type() == SyncMessage.Type.USER_INVALIDATE && !config.syncUsers()) {
-                    return;
-                }
-                if (syncMessage.type() == SyncMessage.Type.GROUP_INVALIDATE && !config.syncGroups()) {
-                    return;
-                }
-                for (Consumer<SyncMessage> listener : listeners) {
-                    listener.accept(syncMessage);
-                }
+                handleIncoming(message);
             }
         };
         subscriber = Executors.newSingleThreadExecutor(r -> {
@@ -135,5 +123,27 @@ public final class RedisSyncBus implements SyncBus {
             return;
         }
         pooled.publish(channel, gson.toJson(message));
+    }
+
+    void handleIncoming(String message) {
+        SyncMessage syncMessage;
+        try {
+            syncMessage = gson.fromJson(message, SyncMessage.class);
+        } catch (RuntimeException e) {
+            logger.log(Level.WARNING, "ServerSync ignored malformed payload", e);
+            return;
+        }
+        if (syncMessage == null || syncMessage.type() == null || originServerId.equals(syncMessage.originServerId())) {
+            return;
+        }
+        if (syncMessage.type() == SyncMessage.Type.USER_INVALIDATE && !config.syncUsers()) {
+            return;
+        }
+        if (syncMessage.type() == SyncMessage.Type.GROUP_INVALIDATE && !config.syncGroups()) {
+            return;
+        }
+        for (Consumer<SyncMessage> listener : listeners) {
+            listener.accept(syncMessage);
+        }
     }
 }

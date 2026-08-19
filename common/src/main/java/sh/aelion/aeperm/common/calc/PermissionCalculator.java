@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -156,12 +157,63 @@ public final class PermissionCalculator {
         }
     }
 
+    /**
+     * Groups whose ancestor chain includes {@code changed}, including {@code changed} itself.
+     * Parent names match even if that parent row is missing from {@code groups}.
+     */
+    public static Set<String> groupsInheriting(String changed, Map<String, GroupData> groups) {
+        String needle = changed.toLowerCase(Locale.ROOT);
+        Set<String> out = new LinkedHashSet<>();
+        out.add(needle);
+        if (groups == null || groups.isEmpty()) {
+            return out;
+        }
+        for (GroupData group : groups.values()) {
+            if (inherits(group, needle, groups, new HashSet<>())) {
+                out.add(group.name());
+            }
+        }
+        return out;
+    }
+
+    public static boolean userInGroups(Set<String> userGroups, Set<String> groupNames) {
+        if (userGroups == null || userGroups.isEmpty() || groupNames == null || groupNames.isEmpty()) {
+            return false;
+        }
+        for (String name : userGroups) {
+            if (groupNames.contains(name.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean wouldCreateCycle(String group, String parent, Map<String, GroupData> groups) {
         if (group.equalsIgnoreCase(parent)) {
             return true;
         }
         Set<String> visiting = new HashSet<>();
         return reaches(parent.toLowerCase(), group.toLowerCase(), groups, visiting);
+    }
+
+    private static boolean inherits(GroupData group, String ancestor, Map<String, GroupData> groups, Set<String> visiting) {
+        if (!visiting.add(group.name())) {
+            return false;
+        }
+        if (group.name().equals(ancestor)) {
+            return true;
+        }
+        for (String parent : group.parents()) {
+            String parentName = parent.toLowerCase(Locale.ROOT);
+            if (parentName.equals(ancestor)) {
+                return true;
+            }
+            GroupData parentGroup = groups.get(parentName);
+            if (parentGroup != null && inherits(parentGroup, ancestor, groups, visiting)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean reaches(String current, String target, Map<String, GroupData> groups, Set<String> visiting) {

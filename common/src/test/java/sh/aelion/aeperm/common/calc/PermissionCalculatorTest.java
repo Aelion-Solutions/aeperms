@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,5 +72,25 @@ class PermissionCalculatorTest {
         UserData user = new UserData(UUID.randomUUID());
         CalculatedUser calculated = calculator.calculateUser(user, Map.of(), ContextSet.empty());
         assertThat(calculated.groups()).contains(PermissionCalculator.DEFAULT_GROUP);
+    }
+
+    @Test
+    void groupsInheritingIncludesDescendants() {
+        GroupData defaults = new GroupData("default");
+        GroupData staff = new GroupData("staff");
+        staff.parents().add("default");
+        GroupData admin = new GroupData("admin");
+        admin.parents().add("staff");
+        Map<String, GroupData> groups = new HashMap<>();
+        groups.put("default", defaults);
+        groups.put("staff", staff);
+        groups.put("admin", admin);
+
+        assertThat(PermissionCalculator.groupsInheriting("default", groups))
+                .containsExactlyInAnyOrder("default", "staff", "admin");
+        assertThat(PermissionCalculator.groupsInheriting("staff", groups))
+                .containsExactlyInAnyOrder("staff", "admin");
+        assertThat(PermissionCalculator.userInGroups(Set.of("staff"), PermissionCalculator.groupsInheriting("default", groups)))
+                .isTrue();
     }
 }

@@ -374,12 +374,10 @@ public final class PermissionService implements AepermAPI {
             }
             case GROUP_INVALIDATE -> {
                 if (message.groupName() != null) {
-                    cache.invalidateGroup(message.groupName());
                     cache.invalidateUsersInGroup(message.groupName());
-                    storage.loadGroup(message.groupName()).ifPresent(g -> {
-                        cache.putGroup(g);
-                        cache.flattened(calculator.flattenAll(cache.groupsView()));
-                    });
+                    cache.invalidateGroup(message.groupName());
+                    storage.loadGroup(message.groupName()).ifPresent(cache::putGroup);
+                    cache.flattened(calculator.flattenAll(cache.groupsView()));
                     groupListener.accept(new GroupChangedEvent(message.groupName(), "serversync"));
                 }
             }
@@ -401,17 +399,26 @@ public final class PermissionService implements AepermAPI {
         }
         UserData data = loadOrCreateUser(uuid);
         CalculatedUser calculated = calculator.calculateUser(data, loadAllGroups(), context, cache.flattened());
-        cache.putUser(calculated, context, earliestNodeExpiry(data));
+        cache.putUser(calculated, context, earliestExpiry(data));
         return calculated;
     }
 
-    private Instant earliestNodeExpiry(UserData data) {
+    private Instant earliestExpiry(UserData data) {
         Instant soonest = null;
         for (PermissionNode node : data.nodes()) {
             if (node.expiry().isEmpty()) {
                 continue;
             }
             Instant exp = node.expiry().get();
+            if (soonest == null || exp.isBefore(soonest)) {
+                soonest = exp;
+            }
+        }
+        for (UserData.TempMembership membership : data.tempMemberships()) {
+            Instant exp = membership.expiry();
+            if (exp == null) {
+                continue;
+            }
             if (soonest == null || exp.isBefore(soonest)) {
                 soonest = exp;
             }
@@ -442,7 +449,7 @@ public final class PermissionService implements AepermAPI {
 
     private Map<String, GroupData> loadAllGroups() {
         if (cache.groupsWarm()) {
-            return new HashMap<>(cache.groupsView());
+            return cache.groupsView();
         }
         Map<String, GroupData> map = new HashMap<>(cache.groupsView());
         for (String name : storage.listGroups()) {

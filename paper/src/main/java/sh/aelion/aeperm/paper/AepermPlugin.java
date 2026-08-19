@@ -127,7 +127,7 @@ public final class AepermPlugin extends JavaPlugin {
     public void reattachGroup(String group) {
         for (Player player : Bukkit.getOnlinePlayers()) {
             CalculatedUser user = permissions.cache().userAny(player.getUniqueId()).orElse(null);
-            if (user == null || user.groups().contains(group.toLowerCase())) {
+            if (permissions.cache().userAffectedByGroup(user, group)) {
                 loadAndAttach(player);
             }
         }

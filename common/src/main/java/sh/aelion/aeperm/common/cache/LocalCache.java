@@ -3,15 +3,17 @@ package sh.aelion.aeperm.common.cache;
 import sh.aelion.aeperm.api.CalculatedUser;
 import sh.aelion.aeperm.api.ContextSet;
 import sh.aelion.aeperm.api.PermissionNode;
+import sh.aelion.aeperm.common.calc.PermissionCalculator;
 import sh.aelion.aeperm.common.model.GroupData;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,8 +75,19 @@ public final class LocalCache {
     }
 
     public void invalidateUsersInGroup(String group) {
-        String needle = group.toLowerCase();
-        users.entrySet().removeIf(e -> e.getValue().value().groups().contains(needle));
+        Set<String> affected = groupsInheriting(group);
+        users.entrySet().removeIf(e -> PermissionCalculator.userInGroups(e.getValue().value().groups(), affected));
+    }
+
+    public Set<String> groupsInheriting(String group) {
+        return PermissionCalculator.groupsInheriting(group, groups);
+    }
+
+    public boolean userAffectedByGroup(CalculatedUser user, String group) {
+        if (user == null) {
+            return true;
+        }
+        return PermissionCalculator.userInGroups(user.groups(), groupsInheriting(group));
     }
 
     public void putGroup(GroupData group) {
@@ -123,7 +136,7 @@ public final class LocalCache {
     }
 
     public Map<String, List<PermissionNode>> flattened() {
-        return new HashMap<>(flattened);
+        return Collections.unmodifiableMap(flattened);
     }
 
     private static UserKey key(UUID uuid, ContextSet ctx) {

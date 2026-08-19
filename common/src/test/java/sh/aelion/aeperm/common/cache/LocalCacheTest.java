@@ -37,6 +37,30 @@ class LocalCacheTest {
         assertThat(cache.groupCount()).isZero();
     }
 
+    @Test
+    void invalidateUsersInGroupIncludesInheritedMembers() {
+        Instant start = Instant.parse("2026-01-01T00:00:00Z");
+        LocalCache cache = new LocalCache(Clock.fixed(start, ZoneOffset.UTC), Duration.ofSeconds(60));
+        GroupData defaults = new GroupData("default");
+        GroupData staff = new GroupData("staff");
+        staff.parents().add("default");
+        cache.putGroup(defaults);
+        cache.putGroup(staff);
+        cache.putGroup(new GroupData("vip"));
+
+        UUID childMember = UUID.randomUUID();
+        UUID defaultMember = UUID.randomUUID();
+        UUID unrelated = UUID.randomUUID();
+        cache.putUser(new CalculatedUser(childMember, "A", "staff", Set.of("staff"), Map.of()));
+        cache.putUser(new CalculatedUser(defaultMember, "B", "default", Set.of("default"), Map.of()));
+        cache.putUser(new CalculatedUser(unrelated, "C", "vip", Set.of("vip"), Map.of()));
+
+        cache.invalidateUsersInGroup("default");
+        assertThat(cache.userAny(childMember)).isEmpty();
+        assertThat(cache.userAny(defaultMember)).isEmpty();
+        assertThat(cache.userAny(unrelated)).isPresent();
+    }
+
     private static final class MutableClock extends Clock {
         private Instant instant;
 
