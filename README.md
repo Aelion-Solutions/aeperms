@@ -8,7 +8,7 @@ Lean, low-overhead permission engine for Minecraft servers and networks.
 - `aeperm-common` - core aeperms
 - `aeperm-paper` / `aeperm-velocity` / `aeperm-bungee` - platform jars
 - `aeperm-bench` - Paper stress-test plugin (test servers only, not published)
-- `aelion-sql` - shared Postgres/MariaDB library (Hikari + Caffeine shaded under `sh.aelion.libs.*`)
+- `sql` - vendored [aelion-sql](https://github.com/Aelion-Solutions/aelion-sql)
 
 ## Development
 

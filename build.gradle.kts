@@ -70,7 +70,7 @@ subprojects {
         }
     }
 
-    if (name == "bench") {
+    if (name == "bench" || name == "sql") {
         tasks.withType<PublishToMavenRepository>().configureEach { enabled = false }
         tasks.withType<PublishToMavenLocal>().configureEach { enabled = false }
     }
