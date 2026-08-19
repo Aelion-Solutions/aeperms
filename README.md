@@ -36,6 +36,8 @@ Java 25, Gradle wrapper:
 
 Jars land in `out/` in root.
 
+CI on `main` uploads Paper, Velocity, and Bungee jars as a GitHub [pre-release](https://github.com/Aelion-Solutions/aeperms/releases/tag/dev). Tag `v1.2` (from `gradle.properties`) for a full release. The API snapshot still publishes to Maven on each `main` push.
+
 ## Benchmark plugin
 
 `aeperm-bench` is for test servers only. It mutates AePerm storage. Drop `out/aeperm-bench-*.jar` next to `aeperm-paper` and run as op (or `aeperm.admin`).
