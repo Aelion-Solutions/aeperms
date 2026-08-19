@@ -2,6 +2,7 @@ package sh.aelion.aeperm.paper;
 
 import lombok.Getter;
 import sh.aelion.aeperm.api.AepermAPI;
+import sh.aelion.aeperm.api.AepermProvider;
 import sh.aelion.aeperm.api.CalculatedUser;
 import sh.aelion.aeperm.api.ContextSet;
 import sh.aelion.aeperm.common.AepermBootstrap;
@@ -58,6 +59,7 @@ public final class AepermPlugin extends JavaPlugin {
             );
 
             Bukkit.getServicesManager().register(AepermAPI.class, permissions, this, ServicePriority.Normal);
+            AepermProvider.register(permissions);
             Bukkit.getPluginManager().registerEvents(new AepermListener(this), this);
             AepermCommands.register(this, commands);
 
@@ -76,10 +78,11 @@ public final class AepermPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         attachments.keySet().forEach(this::clearAttachment);
+        AepermProvider.unregister();
+        Bukkit.getServicesManager().unregisterAll(this);
         if (bootstrap != null) {
             bootstrap.close();
         }
-        Bukkit.getServicesManager().unregisterAll(this);
     }
 
     public void rememberContext(Player player) {

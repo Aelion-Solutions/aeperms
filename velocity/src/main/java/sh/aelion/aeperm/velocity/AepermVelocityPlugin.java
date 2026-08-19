@@ -17,6 +17,8 @@ import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import sh.aelion.aeperm.api.AepermAPI;
+import sh.aelion.aeperm.api.AepermProvider;
 import sh.aelion.aeperm.api.ContextSet;
 import sh.aelion.aeperm.common.AepermBootstrap;
 import sh.aelion.aeperm.common.command.AepermSource;
@@ -93,6 +95,7 @@ public final class AepermVelocityPlugin {
             serverId.set(bootstrap.config().serverId());
 
             permissions = bootstrap.permissions();
+            AepermProvider.register(permissions);
             String version = container.getDescription().getVersion().orElse("unknown");
             commands = new CommandService(
                     permissions,
@@ -135,6 +138,7 @@ public final class AepermVelocityPlugin {
 
             logger.info("AePerm enabled!");
         } catch (Exception e) {
+            AepermProvider.unregister();
             logger.error("Failed to enable AePerm", e);
         }
     }
@@ -154,8 +158,13 @@ public final class AepermVelocityPlugin {
         });
     }
 
+    public AepermAPI api() {
+        return permissions;
+    }
+
     @Subscribe
     public void onShutdown(ProxyShutdownEvent event) {
+        AepermProvider.unregister();
         if (bootstrap != null) {
             bootstrap.close();
         }
