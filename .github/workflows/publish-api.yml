@@ -1,6 +1,7 @@
 name: Publish aeperm-api
 
-# On-demand publish of sh.aelion:aeperm-api to https://maven.aelion.solutions/
+# On-demand release publish of sh.aelion:aeperm-api to https://maven.aelion.solutions/
+# SNAPSHOT publishes run from CI on every push to main.
 
 on:
   workflow_dispatch:
