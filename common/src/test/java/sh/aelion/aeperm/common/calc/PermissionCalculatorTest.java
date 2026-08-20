@@ -58,6 +58,28 @@ class PermissionCalculatorTest {
     }
 
     @Test
+    void starAndNamespaceWildcardsGrantVanillaCommandNodes() {
+        UserData user = new UserData(UUID.randomUUID());
+        user.groups().add("default");
+        user.nodes().add(PermissionNode.allow("*"));
+
+        GroupData defaultGroup = new GroupData("default");
+        Map<String, GroupData> groups = Map.of("default", defaultGroup);
+
+        CalculatedUser star = calculator.calculateUser(user, groups, ContextSet.empty());
+        assertThat(calculator.check(star.permissions(), "minecraft.command.gamemode")).isTrue();
+
+        UserData namespaced = new UserData(UUID.randomUUID());
+        namespaced.groups().add("default");
+        namespaced.nodes().add(PermissionNode.allow("minecraft.*"));
+        namespaced.nodes().add(PermissionNode.deny("minecraft.command.ban"));
+        CalculatedUser minecraft = calculator.calculateUser(namespaced, groups, ContextSet.empty());
+        assertThat(calculator.check(minecraft.permissions(), "minecraft.command.gamemode")).isTrue();
+        assertThat(calculator.check(minecraft.permissions(), "minecraft.command.ban")).isFalse();
+        assertThat(calculator.check(minecraft.permissions(), "bukkit.command.plugins")).isFalse();
+    }
+
+    @Test
     void detectsParentCycles() {
         GroupData a = new GroupData("a");
         GroupData b = new GroupData("b");

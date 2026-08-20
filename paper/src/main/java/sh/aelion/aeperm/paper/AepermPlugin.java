@@ -5,22 +5,28 @@ import sh.aelion.aeperm.api.AepermAPI;
 import sh.aelion.aeperm.api.AepermProvider;
 import sh.aelion.aeperm.api.CalculatedUser;
 import sh.aelion.aeperm.api.ContextSet;
+import sh.aelion.aeperm.api.Wildcard;
 import sh.aelion.aeperm.common.AepermBootstrap;
 import sh.aelion.aeperm.common.command.subcommand.CommandMeta;
 import sh.aelion.aeperm.common.command.CommandService;
 import sh.aelion.aeperm.common.service.PermissionService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -32,6 +38,8 @@ public final class AepermPlugin extends JavaPlugin {
     private final Map<UUID, PermissionAttachment> attachments = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Boolean>> lastAttached = new ConcurrentHashMap<>();
     private final Map<UUID, ContextSet> playerContexts = new ConcurrentHashMap<>();
+    private final Set<UUID> injected = ConcurrentHashMap.newKeySet();
+    private final AtomicBoolean expandWildcards = new AtomicBoolean();
     private final AtomicReference<String> serverId = new AtomicReference<>("server-1");
 
     @Override
@@ -65,6 +73,7 @@ public final class AepermPlugin extends JavaPlugin {
 
             for (Player player : Bukkit.getOnlinePlayers()) {
                 rememberContext(player);
+                ensureInjected(player);
                 loadAndAttach(player);
             }
             getLogger().info("AePerm enabled");
@@ -77,7 +86,11 @@ public final class AepermPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        attachments.keySet().forEach(this::clearAttachment);
+        for (Player player : List.copyOf(Bukkit.getOnlinePlayers())) {
+            clearAttachment(player);
+        }
+        new HashSet<>(injected).forEach(this::clearAttachment);
+        new HashSet<>(attachments.keySet()).forEach(this::clearAttachment);
         AepermProvider.unregister();
         Bukkit.getServicesManager().unregisterAll(this);
         if (bootstrap != null) {
@@ -109,13 +122,60 @@ public final class AepermPlugin extends JavaPlugin {
         return ContextSet.builder().server(serverId.get()).build();
     }
 
+    public void preloadUser(UUID uuid) {
+        if (permissions == null) {
+            return;
+        }
+        try {
+            permissions.user(uuid);
+        } catch (RuntimeException e) {
+            getLogger().warning("Failed to preload permissions for " + uuid + ": " + e.getMessage());
+        }
+    }
+
+    void ensureInjected(Player player) {
+        UUID uuid = player.getUniqueId();
+        if (injected.contains(uuid) || expandWildcards.get()) {
+            return;
+        }
+        if (PermissibleInjector.inject(player, new AepermPermissible(player, this))) {
+            injected.add(uuid);
+            return;
+        }
+        if (expandWildcards.compareAndSet(false, true)) {
+            getLogger().warning("Could not intercept Bukkit permission checks; expanding wildcards onto registered Superperms nodes instead");
+        }
+    }
+
+    Map<String, Boolean> cachedPermissions(UUID uuid) {
+        if (permissions == null) {
+            return null;
+        }
+        ContextSet ctx = playerContexts.get(uuid);
+        Optional<CalculatedUser> user = ctx == null
+                ? permissions.cache().userAny(uuid)
+                : permissions.cache().user(uuid, ctx);
+        if (user.isEmpty()) {
+            user = permissions.cache().userAny(uuid);
+        }
+        return user.map(CalculatedUser::permissions).orElse(null);
+    }
+
     public void loadAndAttach(Player player) {
         rememberContext(player);
+        ensureInjected(player);
         Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
             permissions.updateUserName(player.getUniqueId(), player.getName());
             CalculatedUser user = permissions.user(player.getUniqueId()).orElseThrow();
             Bukkit.getScheduler().runTask(this, () -> applyAttachment(player, user));
         });
+    }
+
+    void reattachAllIfExpanding() {
+        if (!expandWildcards.get()) {
+            return;
+        }
+        reattachAll();
     }
 
     public void reattach(UUID uuid) {
@@ -142,9 +202,18 @@ public final class AepermPlugin extends JavaPlugin {
         }
     }
 
+    public void clearAttachment(Player player) {
+        clearAttachment(player.getUniqueId(), player);
+    }
+
     public void clearAttachment(UUID uuid) {
+        clearAttachment(uuid, Bukkit.getPlayer(uuid));
+    }
+
+    private void clearAttachment(UUID uuid, Player player) {
         playerContexts.remove(uuid);
         lastAttached.remove(uuid);
+        injected.remove(uuid);
         PermissionAttachment attachment = attachments.remove(uuid);
         if (attachment != null) {
             try {
@@ -152,10 +221,15 @@ public final class AepermPlugin extends JavaPlugin {
             } catch (Exception ignored) {
             }
         }
+        if (player != null) {
+            PermissibleInjector.uninject(player);
+        }
     }
 
     private void applyAttachment(Player player, CalculatedUser user) {
-        Map<String, Boolean> next = user.permissions();
+        Map<String, Boolean> next = expandWildcards.get()
+                ? Wildcard.expand(user.permissions(), knownPermissionNames())
+                : user.permissions();
         PermissionAttachment attachment = attachments.get(player.getUniqueId());
         Map<String, Boolean> prev = lastAttached.getOrDefault(player.getUniqueId(), Map.of());
         if (attachment == null) {
@@ -185,5 +259,11 @@ public final class AepermPlugin extends JavaPlugin {
         if (changed) {
             player.recalculatePermissions();
         }
+    }
+
+    private static Iterable<String> knownPermissionNames() {
+        return Bukkit.getPluginManager().getPermissions().stream()
+                .map(Permission::getName)
+                .toList();
     }
 }

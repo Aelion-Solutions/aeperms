@@ -50,11 +50,6 @@ public final class CalculatedUser {
     }
 
     public boolean has(String node) {
-        String normalized = Wildcard.normalize(node);
-        Boolean exact = permissions.get(normalized);
-        if (exact != null) {
-            return exact;
-        }
-        return Wildcard.match(permissions, normalized);
+        return Wildcard.match(permissions, node);
     }
 }

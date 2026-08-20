@@ -101,12 +101,7 @@ public final class PermissionCalculator {
     }
 
     public boolean check(Map<String, Boolean> permissions, String node) {
-        String normalized = Wildcard.normalize(node);
-        Boolean exact = permissions.get(normalized);
-        if (exact != null) {
-            return exact;
-        }
-        return Wildcard.match(permissions, normalized);
+        return Wildcard.match(permissions, node);
     }
 
     private Set<String> resolveGroups(UserData user, Instant now) {
