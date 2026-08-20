@@ -30,6 +30,14 @@ tasks {
         relocate("sh.aelion.sql", "sh.aelion.aeperm.libs.sql")
         relocate("sh.aelion.libs.hikari", "sh.aelion.aeperm.libs.hikari")
         relocate("sh.aelion.libs.caffeine", "sh.aelion.aeperm.libs.caffeine")
+        relocate("org.hibernate", "sh.aelion.aeperm.libs.hibernate")
+        relocate("org.flywaydb", "sh.aelion.aeperm.libs.flyway")
+        relocate("net.bytebuddy", "sh.aelion.aeperm.libs.bytebuddy")
+        relocate("org.jboss.logging", "sh.aelion.aeperm.libs.jboss.logging")
+        relocate("jakarta.persistence", "sh.aelion.aeperm.libs.jakarta.persistence")
+        relocate("jakarta.transaction", "sh.aelion.aeperm.libs.jakarta.transaction")
+        relocate("org.antlr", "sh.aelion.aeperm.libs.antlr")
+        relocate("org.slf4j", "sh.aelion.aeperm.libs.slf4j")
         mergeServiceFiles()
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
     }

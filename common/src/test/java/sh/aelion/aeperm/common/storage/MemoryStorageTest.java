@@ -26,8 +26,8 @@ class MemoryStorageTest {
 
         assertThat(storage.loadUser(uuid)).isPresent();
         assertThat(storage.findUserByName("alex")).isPresent();
-        assertThat(storage.listUserNames()).contains("Alex");
         assertThat(storage.listUserNames("Al", 10)).containsExactly("Alex");
+        assertThat(storage.listUserNames("", 10)).isEmpty();
         assertThat(storage.listUserNames("zz", 10)).isEmpty();
 
         for (int i = 0; i < 1000; i++) {

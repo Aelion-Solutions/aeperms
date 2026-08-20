@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 public final class MemoryStorage implements Storage {
 
@@ -69,16 +68,11 @@ public final class MemoryStorage implements Storage {
     }
 
     @Override
-    public Set<String> listUserNames() {
-        return users.values().stream()
-                .map(UserData::name)
-                .filter(n -> n != null && !n.isBlank())
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    @Override
     public List<String> listUserNames(String prefix, int limit) {
-        String needle = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
+        if (prefix == null || prefix.isBlank() || limit <= 0) {
+            return List.of();
+        }
+        String needle = prefix.toLowerCase(Locale.ROOT);
         return users.values().stream()
                 .map(UserData::name)
                 .filter(n -> n != null && !n.isBlank())

@@ -27,8 +27,6 @@ public interface Storage extends AutoCloseable {
 
     Set<String> listGroups();
 
-    Set<String> listUserNames();
-
     List<String> listUserNames(String prefix, int limit);
 
     void appendHistory(HistoryRecord record);
